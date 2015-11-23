@@ -2,7 +2,7 @@ NAME =	ft_ping
 
 SRCDIR = srcs/
 
-CFILES =	main.c
+CFILES =	main.c pingManager.c
 
 SRC = $(addprefix $(SRCDIR), $(CFILES))
 
