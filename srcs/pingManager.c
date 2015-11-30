@@ -1,15 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "pingManager.h"
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-
-
 #define MTU 1400
 
-typedef struct icmp_echo s_icmp_echo
+struct icmp_echo
 {
 	unsigned char type;
 	unsigned char code;
@@ -17,12 +9,12 @@ typedef struct icmp_echo s_icmp_echo
 	unsigned short identifier;
 	unsigned short sequence;
 	char data[MTU];
-}						t_icmp_echo;
+};
 
 /*
  * IP_HEADER prototype
  */
-typedef struct ip_header s_ip_header
+struct ip_header
 {
 	unsigned int	hl:4;		/* 4 bit header length */
 	unsigned int	ver:4;		/* 4 bit version */
@@ -35,7 +27,7 @@ typedef struct ip_header s_ip_header
 	unsigned short	csum;		/* our checksum */
 	unsigned long 	saddr;		/* source address */
 	unsigned long 	daddr;		/* destination address */
-}						t_icmp_echo;
+};
 
 
 // void displayPing(void* elem)
@@ -49,49 +41,76 @@ typedef struct ip_header s_ip_header
 // 	printf("TTL:%d from:\n", ipheader->ttl);
 // }
 
-int ft_ping(char *adress)
+// typedef struct addrinfo addrinfo;
+
+t_data *initConnexion(char *adress)
 {
-	struct addrinfo *res;
-	struct sockaddr_in addr_in;
 	int error;
-	int server_fd;
 	const int val=255;
-	struct icmp_echo* icmp;
-	struct ip_header* ipheader;
+	t_data *data = malloc(sizeof(t_data));
 
-	char *packet;
-	packet = malloc(sizeof(struct ip_header) + sizeof(struct icmp_echo) );
-	ipheader = (struct ip_header*)packet;
-	icmp = (struct icmp_echo*)(packet+sizeof(struct ip_header));
-
-	char *response = malloc(68*sizeof(char));
-	int i = 0;
-	while (++i < 68)
-		response[i] = 'A';
-	response[67] = 0;
-	error = getaddrinfo(adress, NULL, NULL, &res);
+	data->adress = adress;
+	error = getaddrinfo(data->adress, NULL, NULL, &(data->addrinfo));
 	if (error != 0)
 	{
 		printf("we got an error getting adress info!\n");
-		return (-1);
+		return NULL;
 	}
-	server_fd = socket(AF_INET,SOCK_RAW,1);
+	data->server_fd = socket(AF_INET,SOCK_RAW,1);
+	if (data->server_fd == -1)
+	{
+		perror("socket");
+		printf("we got an error while establishing the socket!\n");
+		return NULL;
+	}
+	if (setsockopt(data->server_fd, SOL_SOCKET, IP_TTL, &val, sizeof(val)) != 0)
+	{
+		perror("Set TTL option");
+		return NULL;
+	}
+	data->packet = malloc(sizeof(struct ip_header) + sizeof(struct icmp_echo) );
+	data->ipheader = (struct ip_header*)data->packet;
+	data->icmp = (struct icmp_echo*)(data->packet+sizeof(struct ip_header));
+
+	return data;
+}
+
+int ft_ping(char *adress)
+{
+	int error;
+	const int val=255;
+	struct addrinfo		*addrinfo;
+	struct sockaddr_in	addr_in;
+
+	error = getaddrinfo(adress, NULL, NULL, &addrinfo);
+	if (error != 0)
+	{
+		printf("we got an error getting adress info!\n");
+		return -1;
+	}
+	int server_fd = socket(AF_INET,SOCK_RAW,1);
 	if (server_fd == -1)
 	{
 		perror("socket");
 		printf("we got an error while establishing the socket!\n");
-		return (-1);
+		return -1;
 	}
 	if (setsockopt(server_fd, SOL_SOCKET, IP_TTL, &val, sizeof(val)) != 0)
 	{
 		perror("Set TTL option");
 		return -1;
 	}
-	(void)icmp;(void)ipheader;
 
-	printf("adress:%s\n", adress);
+	char *response = malloc(68*sizeof(char));
+	int i = 0;
+	while (++i < 68)
+		response[i] = 'A';
+	response[67] = 0;
+
+	printf("adress:%s - fd:%d\n", adress, server_fd);
 	addr_in.sin_family = AF_INET;
-	sendto(server_fd, response, sizeof(response), 0, (struct sockaddr *)&addr_in, sizeof(addr_in));
+	sendto(server_fd, response, sizeof(response), 0, (struct sockaddr *)&(addr_in), sizeof(addr_in));
+	//sendto(d->server_fd, response, sizeof(response), 0, d->addrinfo->ai_addr, d->addrinfo->ai_addrlen);
 	perror("sendto");
 
 	// while(1)
