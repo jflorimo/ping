@@ -43,52 +43,25 @@ struct ip_header
 
 // typedef struct addrinfo addrinfo;
 
-t_data *initConnexion(char *adress)
-{
-	int error;
-	const int val=255;
-	t_data *data = malloc(sizeof(t_data));
-
-	data->adress = adress;
-	error = getaddrinfo(data->adress, NULL, NULL, &(data->addrinfo));
-	if (error != 0)
-	{
-		printf("we got an error getting adress info!\n");
-		return NULL;
-	}
-	data->server_fd = socket(AF_INET,SOCK_RAW,1);
-	if (data->server_fd == -1)
-	{
-		perror("socket");
-		printf("we got an error while establishing the socket!\n");
-		return NULL;
-	}
-	if (setsockopt(data->server_fd, SOL_SOCKET, IP_TTL, &val, sizeof(val)) != 0)
-	{
-		perror("Set TTL option");
-		return NULL;
-	}
-	data->packet = malloc(sizeof(struct ip_header) + sizeof(struct icmp_echo) );
-	data->ipheader = (struct ip_header*)data->packet;
-	data->icmp = (struct icmp_echo*)(data->packet+sizeof(struct ip_header));
-
-	return data;
-}
 
 int ft_ping(char *adress)
 {
 	t_data *d = initConnexion(adress);
-	char *response = malloc(80*sizeof(char));
 
-	printf("adress:%s\n", d->adress);
 	d->addr_in.sin_family = AF_INET;
-	if (sendto(d->server_fd, response, sizeof(response), 0, (struct sockaddr *)&(d->addr_in), sizeof(d->addr_in)) == -1)
+	d->addr_in.sin_addr.s_addr = d->ipheader->daddr;
+	if (sendto(d->server_fd, d->response, sizeof(d->response), 0, (struct sockaddr *)&(d->addr_in), sizeof(d->addr_in)) == -1)
 		perror("sendto");
 	if (recvfrom(d->server_fd, &d->packet, sizeof(d->packet), 0, (struct sockaddr *)&(d->addrinfo->ai_addr), &(d->addrinfo->ai_addrlen)) == -1 )
 		perror("recvfrom");
 
 	printf("***Got message!***\n");
-	printf("message:%s", d->packet);
+
+	char *saddr = malloc(24 * sizeof(char));
+	char *daddr = malloc(24 * sizeof(char));
+	inet_ntop(AF_INET, &(d->ipheader->saddr), saddr, 24 * sizeof(char));
+	inet_ntop(AF_INET, &(d->ipheader->daddr), daddr, 24 * sizeof(char));
+	printf("TTL:%d from:%s to destination:%s\n", d->ipheader->ttl, saddr, daddr);
 
 	return 0;
 
@@ -212,19 +185,50 @@ int ft_ping(char *adress)
 	return 0;
 }
 
+t_data *initConnexion(char *adress)
+{
+	int error;
+	const int val=255;
+	t_data *data = malloc(sizeof(t_data));
+
+	data->adress = adress;
+	error = getaddrinfo(data->adress, NULL, NULL, &(data->addrinfo));
+	if (error != 0)
+	{
+		printf("we got an error getting adress info!\n");
+		return NULL;
+	}
+	data->server_fd = socket(AF_INET,SOCK_RAW,1);
+	if (data->server_fd == -1)
+	{
+		perror("socket");
+		printf("we got an error while establishing the socket!\n");
+		return NULL;
+	}
+	if (setsockopt(data->server_fd, SOL_SOCKET, IP_TTL, &val, sizeof(val)) != 0)
+	{
+		perror("Set TTL option");
+		return NULL;
+	}
+	data->packet = malloc(sizeof(struct ip_header) + sizeof(struct icmp_echo) );
+	data->ipheader = (struct ip_header*)data->packet;
+	data->icmp = (struct icmp_echo*)(data->packet+sizeof(struct ip_header));
+	data->response = malloc(80*sizeof(char));
+	return data;
+}
 
 
-// unsigned short calcsum(unsigned short *buffer, int length)
-// {
-// 	unsigned long sum; 	
+unsigned short calcsum(unsigned short *buffer, int length)
+{
+	unsigned long sum; 	
 
-// 	for (sum=0; length>1; length-=2) 
-// 		sum += *buffer++;
+	for (sum=0; length>1; length-=2) 
+		sum += *buffer++;
 
-// 	if (length==1)
-// 		sum += (char)*buffer;
+	if (length==1)
+		sum += (char)*buffer;
 
-// 	sum = (sum >> 16) + (sum & 0xFFFF);
-// 	sum += (sum >> 16);
-// 	return ~sum;
-// }
+	sum = (sum >> 16) + (sum & 0xFFFF);
+	sum += (sum >> 16);
+	return ~sum;
+}

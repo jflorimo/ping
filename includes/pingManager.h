@@ -17,8 +17,10 @@ typedef struct			s_data
 	struct icmp_echo	*icmp;
 	struct ip_header	*ipheader;
 	char				*packet;
+	char 				*response;
 }						t_data;
 
 int ft_ping(char *adress);
+t_data *initConnexion(char *adress);
 
 #endif
