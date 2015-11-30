@@ -77,41 +77,97 @@ t_data *initConnexion(char *adress)
 
 int ft_ping(char *adress)
 {
-	int error;
-	const int val=255;
-	struct addrinfo		*addrinfo;
-	struct sockaddr_in	addr_in;
+	t_data *d = initConnexion(adress);
+	char *response = malloc(80*sizeof(char));
 
-	error = getaddrinfo(adress, NULL, NULL, &addrinfo);
-	if (error != 0)
-	{
-		printf("we got an error getting adress info!\n");
-		return -1;
-	}
-	int server_fd = socket(AF_INET,SOCK_RAW,1);
-	if (server_fd == -1)
-	{
-		perror("socket");
-		printf("we got an error while establishing the socket!\n");
-		return -1;
-	}
-	if (setsockopt(server_fd, SOL_SOCKET, IP_TTL, &val, sizeof(val)) != 0)
-	{
-		perror("Set TTL option");
-		return -1;
-	}
+	printf("adress:%s\n", d->adress);
+	d->addr_in.sin_family = AF_INET;
+	if (sendto(d->server_fd, response, sizeof(response), 0, (struct sockaddr *)&(d->addr_in), sizeof(d->addr_in)) == -1)
+		perror("sendto");
+	if (recvfrom(d->server_fd, &d->packet, sizeof(d->packet), 0, (struct sockaddr *)&(d->addrinfo->ai_addr), &(d->addrinfo->ai_addrlen)) == -1 )
+		perror("recvfrom");
 
-	char *response = malloc(68*sizeof(char));
-	int i = 0;
-	while (++i < 68)
-		response[i] = 'A';
-	response[67] = 0;
+	printf("***Got message!***\n");
+	printf("message:%s", d->packet);
 
-	printf("adress:%s - fd:%d\n", adress, server_fd);
-	addr_in.sin_family = AF_INET;
-	sendto(server_fd, response, sizeof(response), 0, (struct sockaddr *)&(addr_in), sizeof(addr_in));
-	//sendto(d->server_fd, response, sizeof(response), 0, d->addrinfo->ai_addr, d->addrinfo->ai_addrlen);
-	perror("sendto");
+	return 0;
+
+
+	// struct addrinfo *res;
+	// struct sockaddr_in addr_in;
+	// int error;
+	// int server_fd;
+	// const int val=255;
+	// // struct icmp_echo* icmp = malloc(sizeof(struct icmp_echo));
+
+	// char *packet;
+	// packet = malloc(80*sizeof(char));
+	// char *response = malloc(80*sizeof(char));
+
+	// error = getaddrinfo(adress, NULL, NULL, &res);
+	// if (error != 0)
+	// {
+	// 	printf("we got an error getting adress info!\n");
+	// 	return (-1);
+	// }
+	// server_fd = socket(res->ai_family,SOCK_RAW,IPPROTO_ICMP);
+	// if (server_fd == -1)
+	// {
+	// 	perror("socket");
+	// 	printf("we got an error while establishing the socket!\n");
+	// 	return (-1);
+	// }
+	// if (setsockopt(server_fd, SOL_SOCKET, IP_TTL, &val, sizeof(val)) != 0)
+	// {
+	// 	perror("Set TTL option");
+	// 	return -1;
+	// }
+
+	// printf("adress:%s\n", adress);
+	// addr_in.sin_family = AF_INET;
+	// if (sendto(server_fd, response, sizeof(response), 0, (struct sockaddr *)&addr_in, sizeof(addr_in)) == -1)
+	// 	perror("sendto");
+	// if (recvfrom(server_fd, &packet, sizeof(packet), 0, (struct sockaddr *)&res->ai_addr, &res->ai_addrlen) == -1 )
+	// 	perror("recvfrom");
+	// printf("***Got message!***\n");
+	// printf("message:%s", packet);
+
+	// return 0;
+	// int error;
+	// const int val=255;
+	// struct addrinfo		*addrinfo;
+	// struct sockaddr_in	addr_in;
+
+	// error = getaddrinfo(adress, NULL, NULL, &addrinfo);
+	// if (error != 0)
+	// {
+	// 	printf("we got an error getting adress info!\n");
+	// 	return -1;
+	// }
+	// int server_fd = socket(AF_INET,SOCK_RAW,1);
+	// if (server_fd == -1)
+	// {
+	// 	perror("socket");
+	// 	printf("we got an error while establishing the socket!\n");
+	// 	return -1;
+	// }
+	// if (setsockopt(server_fd, SOL_SOCKET, IP_TTL, &val, sizeof(val)) != 0)
+	// {
+	// 	perror("Set TTL option");
+	// 	return -1;
+	// }
+
+	// char *response = malloc(68*sizeof(char));
+	// int i = 0;
+	// while (++i < 68)
+	// 	response[i] = 'A';
+	// response[67] = 0;
+
+	// printf("adress:%s - fd:%d\n", adress, server_fd);
+	// addr_in.sin_family = AF_INET;
+	// sendto(server_fd, response, sizeof(response), 0, (struct sockaddr *)&(addr_in), sizeof(addr_in));
+	// //sendto(d->server_fd, response, sizeof(response), 0, d->addrinfo->ai_addr, d->addrinfo->ai_addrlen);
+	// perror("sendto");
 
 	// while(1)
 	// {
