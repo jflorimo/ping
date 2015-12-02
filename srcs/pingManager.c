@@ -47,7 +47,12 @@ struct ip_header
 int ft_ping(char *adress)
 {
 	t_data *d = initConnexion(adress);
+	char saddr[INET6_ADDRSTRLEN];
+	char daddr[INET6_ADDRSTRLEN];
 
+	inet_ntop(AF_INET, &(d->ipheader->saddr), saddr, INET6_ADDRSTRLEN);
+	inet_ntop(AF_INET, &(d->ipheader->daddr), daddr, INET6_ADDRSTRLEN);
+	printf("TTL:%d from:%s to destination:%s\n", d->ipheader->ttl, saddr, daddr);
 	d->addr_in.sin_family = AF_INET;
 	d->addr_in.sin_addr.s_addr = d->ipheader->daddr;
 	if (sendto(d->server_fd, d->response, sizeof(d->response), 0, (struct sockaddr *)&(d->addr_in), sizeof(d->addr_in)) == -1)
@@ -57,10 +62,9 @@ int ft_ping(char *adress)
 
 	printf("***Got message!***\n");
 
-	char *saddr = malloc(24 * sizeof(char));
-	char *daddr = malloc(24 * sizeof(char));
-	inet_ntop(AF_INET, &(d->ipheader->saddr), saddr, 24 * sizeof(char));
-	inet_ntop(AF_INET, &(d->ipheader->daddr), daddr, 24 * sizeof(char));
+
+	inet_ntop(AF_INET, &(d->ipheader->saddr), saddr, INET6_ADDRSTRLEN);
+	inet_ntop(AF_INET, &(d->ipheader->daddr), daddr, INET6_ADDRSTRLEN);
 	printf("TTL:%d from:%s to destination:%s\n", d->ipheader->ttl, saddr, daddr);
 
 	return 0;

@@ -47,8 +47,8 @@ static void ping(char *host)
 		return ;
 	}
 
-	memset(&pingaddr, 0, sizeof(struct sockaddr_in));
-	pingaddr.sin_family = AF_INET;
+	// memset(&pingaddr, 0, sizeof(struct sockaddr_in));
+	// pingaddr.sin_family = AF_INET;
 
 	if (getaddrinfo(host, NULL, NULL, &addrinfo) != 0)
 	{
@@ -70,30 +70,22 @@ static void ping(char *host)
     		return ;
 	}
 
-	while (1) {
-		struct sockaddr_in from;
-		socklen_t fromlen = sizeof(from);
-		if ((c = recvfrom(pingsock, packet, sizeof(packet), 0,(struct sockaddr *) &from, &fromlen)) < 0)
-		{
-			if (errno == EINTR)
-				continue;
-			 perror("ping: recvfrom");
-			continue;
-		}
-		if (c >= 76)
-		{
-			struct iphdr *iphdr = (struct iphdr *) packet;
-			char *saddr = malloc(24 * sizeof(char));
-			char *daddr = malloc(24 * sizeof(char));
-			inet_ntop(AF_INET, &(iphdr->saddr), saddr, 24 * sizeof(char));
-			inet_ntop(AF_INET, &(iphdr->daddr), daddr, 24 * sizeof(char));
-			printf("TTL:%d from:%s to destination:%s\n", iphdr->ttl, saddr, daddr);
-
-			pkt = (struct icmp *) (packet + (iphdr->ihl << 2));
-			if (pkt->icmp_type == ICMP_ECHOREPLY)
-				 break;
-		}
+	struct sockaddr_in from;
+	socklen_t fromlen = sizeof(from);
+	if ((c = recvfrom(pingsock, packet, sizeof(packet), 0,(struct sockaddr *) &from, &fromlen)) < 0)
+	{
+		 perror("ping: recvfrom");
 	}
+	if (c >= 76)
+	{
+		struct iphdr *iphdr = (struct iphdr *) packet;
+		char *saddr = malloc(24 * sizeof(char));
+		char *daddr = malloc(24 * sizeof(char));
+		inet_ntop(AF_INET, &(iphdr->saddr), saddr, 24 * sizeof(char));
+		inet_ntop(AF_INET, &(iphdr->daddr), daddr, 24 * sizeof(char));
+		printf("TTL:%d from:%s to destination:%s\n", iphdr->ttl, saddr, daddr);
+	}
+
 	printf("%s is alive!\n", hostname);
 	return;
 }
