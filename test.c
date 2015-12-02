@@ -41,6 +41,7 @@ static void ping(char *host)
 	int pingsock, c;
 	char packet[DEFDATALEN + MAXIPLEN + MAXICMPLEN];
 
+
 	if ((pingsock = socket(AF_INET, SOCK_RAW, 1)) < 0)
 	{
 		perror("ping: creating a raw socket");
@@ -56,21 +57,32 @@ static void ping(char *host)
 		return ;
 	}
 
+
+	//icmphdr
+	//http://stackoverflow.com/questions/13620607/creating-ip-network-packets
 	pkt = (struct icmp *) packet;
 	memset(pkt, 0, sizeof(packet));
 	pkt->icmp_type = ICMP_ECHO;
 	pkt->icmp_cksum = calcsum((unsigned short *) pkt, sizeof(packet));
 
-	c = sendto(pingsock, packet, sizeof(packet), 0, addrinfo->ai_addr, addrinfo->ai_addrlen);
+
+	struct sockaddr_in addr;
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = addrinfo->ai_family;
+	addr.sin_addr.s_addr = ((struct sockaddr_in*)(addrinfo->ai_addr))->sin_addr.s_addr;
+
+
+	c = sendto(pingsock, packet, sizeof(packet), 0, (struct sockaddr *)&addr, sizeof(addr));
 
 	if (c < 0 || c != sizeof(packet)) {
 		if (c < 0)
 			perror("ping: sendto");
 		fprintf(stderr, "ping: write incomplete\n");
-    		return ;
+    	return ;
 	}
 
 	struct sockaddr_in from;
+	memset(&from, 0, sizeof(from));
 	socklen_t fromlen = sizeof(from);
 	if ((c = recvfrom(pingsock, packet, sizeof(packet), 0,(struct sockaddr *) &from, &fromlen)) < 0)
 	{
