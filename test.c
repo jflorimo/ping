@@ -13,6 +13,13 @@
 #define MAXIPLEN        60
 #define MAXICMPLEN      76
 
+#define PACKETSIZE	56
+struct packet
+{
+	struct icmphdr hdr;
+	char msg[PACKETSIZE-sizeof(struct icmphdr)];
+};
+
 static char *hostname = NULL;
 
 static unsigned short calcsum(unsigned short *buffer, int length)
@@ -39,7 +46,10 @@ static void ping(char *host)
 	struct sockaddr_in pingaddr;
 	struct icmp *pkt;
 	int pingsock, c;
-	char packet[DEFDATALEN + MAXIPLEN + MAXICMPLEN];
+
+	struct iphdr *ip;
+	struct icmphdr *icmp;
+	char *packet;
 
 
 	if ((pingsock = socket(AF_INET, SOCK_RAW, 1)) < 0)
@@ -60,15 +70,25 @@ static void ping(char *host)
 
 	//icmphdr
 	//http://stackoverflow.com/questions/13620607/creating-ip-network-packets
+	/*
 	pkt = (struct icmp *) packet;
 	memset(pkt, 0, sizeof(packet));
 	pkt->icmp_type = ICMP_ECHO;
 	pkt->icmp_cksum = calcsum((unsigned short *) pkt, sizeof(packet));
+	*/
+
+	/*
+	packet = malloc(sizeof(struct iphdr) + sizeof(struct icmphdr));
+	memset(packet, 0, sizeof(packet));
+	ip = (struct iphdr*) packet;
+	icmp = (struct icmphdr*)(packet + sizeof(strcut icmphdr));
+	*/
 
 
 	struct sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = addrinfo->ai_family;
+	addr.sin_port = 0;
 	addr.sin_addr.s_addr = ((struct sockaddr_in*)(addrinfo->ai_addr))->sin_addr.s_addr;
 
 
