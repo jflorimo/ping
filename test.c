@@ -49,7 +49,7 @@ static void ping(char *host)
 
 	struct iphdr *ip;
 	struct icmphdr *icmp;
-	char *packet;
+//	char *packet;
 
 
 	if ((pingsock = socket(AF_INET, SOCK_RAW, 1)) < 0)
@@ -121,11 +121,11 @@ static void ping(char *host)
 	}
 	if (c >= PACKETSIZE)
 	{
-		struct iphdr *iphdr = (struct iphdr *) packet;
-		char *saddr = malloc(24 * sizeof(char));
-		char *daddr = malloc(24 * sizeof(char));
-		inet_ntop(AF_INET, &(iphdr->saddr), saddr, 24 * sizeof(char));
-		inet_ntop(AF_INET, &(iphdr->daddr), daddr, 24 * sizeof(char));
+		struct iphdr *iphdr = (struct iphdr *)&pkt;
+		char saddr[INET_ADDRSTRLEN];
+		char daddr[INET_ADDRSTRLEN];
+		inet_ntop(AF_INET, &(iphdr->saddr), saddr, INET_ADDRSTRLEN);
+		inet_ntop(AF_INET, &(iphdr->daddr), daddr, INET_ADDRSTRLEN);
 		printf("TTL:%d from:%s to destination:%s\n", iphdr->ttl, saddr, daddr);
 	}
 
