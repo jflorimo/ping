@@ -102,7 +102,7 @@ static void ping(char *host)
 	addr.sin_port = 0;
 	addr.sin_addr.s_addr = ((struct sockaddr_in*)(addrinfo->ai_addr))->sin_addr.s_addr;
 
-	
+
 	c = sendto(pingsock, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, sizeof(addr));
 
 	if (c < 0 || c != sizeof(pkt)) {
@@ -119,7 +119,7 @@ static void ping(char *host)
 	{
 		 perror("ping: recvfrom");
 	}
-	if (c >= 76)
+	if (c >= PACKETSIZE)
 	{
 		struct iphdr *iphdr = (struct iphdr *) packet;
 		char *saddr = malloc(24 * sizeof(char));
