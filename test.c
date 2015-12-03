@@ -44,7 +44,7 @@ static void ping(char *host)
 {
 	struct addrinfo *addrinfo;
 	struct sockaddr_in pingaddr;
-	struct icmp *pkt;
+	//struct icmp *pkt;
 	int pingsock, c;
 
 	struct iphdr *ip;
@@ -84,6 +84,17 @@ static void ping(char *host)
 	icmp = (struct icmphdr*)(packet + sizeof(strcut icmphdr));
 	*/
 
+	struct packet pkt;
+	memset(&pkt, 0, sizeof(pkt));
+	pkt.hdr.type = ICMP_ECHO;
+	pkt.hdr.un.echo.id = getpid();
+	int i = 0;
+	for ( i = 0; i < sizeof(pkt.msg) - 1; i++ )
+		pkt.msg[i] = i + '0';
+	pkt.msg[i] = 0;
+	pkt.hdr.un.echo.sequence = 1;// cnt ???
+	pkt.hdr.checksum = calcsum((short unsigned int *)&pkt, sizeof(pkt));
+
 
 	struct sockaddr_in addr;
 	memset(&addr, 0, sizeof(addr));
@@ -91,10 +102,10 @@ static void ping(char *host)
 	addr.sin_port = 0;
 	addr.sin_addr.s_addr = ((struct sockaddr_in*)(addrinfo->ai_addr))->sin_addr.s_addr;
 
+	
+	c = sendto(pingsock, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, sizeof(addr));
 
-	c = sendto(pingsock, packet, sizeof(packet), 0, (struct sockaddr *)&addr, sizeof(addr));
-
-	if (c < 0 || c != sizeof(packet)) {
+	if (c < 0 || c != sizeof(pkt)) {
 		if (c < 0)
 			perror("ping: sendto");
 		fprintf(stderr, "ping: write incomplete\n");
@@ -104,7 +115,7 @@ static void ping(char *host)
 	struct sockaddr_in from;
 	memset(&from, 0, sizeof(from));
 	socklen_t fromlen = sizeof(from);
-	if ((c = recvfrom(pingsock, packet, sizeof(packet), 0,(struct sockaddr *) &from, &fromlen)) < 0)
+	if ((c = recvfrom(pingsock, &pkt, sizeof(pkt), 0,(struct sockaddr *) &from, &fromlen)) < 0)
 	{
 		 perror("ping: recvfrom");
 	}
