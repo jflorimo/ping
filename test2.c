@@ -1,4 +1,3 @@
-#include "pingManager.h"
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
@@ -9,8 +8,6 @@
 #include <errno.h>
 #include <sys/signal.h>
 #include <string.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #define PACKETSIZE	56
 struct packet
@@ -33,18 +30,27 @@ static unsigned short calcsum(unsigned short *buffer, int length)
 	return ~sum;
 }
 
-int ping(char *host)
+static void noresp(int ign)
+{
+	printf("No response from %s\n", hostname);
+	exit(0);
+}
+
+static void ping(char *host)
 {
 	struct addrinfo *addrinfo;
+	struct sockaddr_in pingaddr;
 	struct sockaddr_in addr;
 	struct sockaddr_in from;
 	struct packet pkt;
+	struct iphdr *ip;
+	struct icmphdr *icmp;
 	int pingsock, c;
 
 	if ((pingsock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
 	{
 		perror("ping: creating a raw socket");
-		return -1;
+		return ;
 	}
 	// const int	val = 64;
 	// if (setsockopt(pingsock, SOL_IP, IP_TTL, &val, sizeof(val)) != 0)
@@ -56,17 +62,14 @@ int ping(char *host)
 	if (getaddrinfo(host, NULL, NULL, &addrinfo) != 0)
 	{
 		printf("we got an error getting adress info!\n");
-		return -1;
+		return ;
 	}
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = addrinfo->ai_family;
 	addr.sin_port = 0;
 	addr.sin_addr.s_addr = ((struct sockaddr_in*)(addrinfo->ai_addr))->sin_addr.s_addr;
-	char adress[INET_ADDRSTRLEN];
-	inet_ntop(AF_INET, &(addr.sin_addr.s_addr), adress, INET_ADDRSTRLEN);
-	//PING google.com (216.58.208.238): 48 data bytes
-	printf("PING %s (%s): %d data bytes\n", host, adress, (int)(PACKETSIZE-sizeof(struct icmphdr)));
+
 	int seq = 0;
 	while (0x2a)
 	{
@@ -75,7 +78,7 @@ int ping(char *host)
 		pkt.hdr.type = ICMP_ECHO;
 		pkt.hdr.un.echo.id = getpid();
 		int i = 0;
-		for ( i = 0; i < (int)sizeof(pkt.msg) - 1; i++ )
+		for ( i = 0; i < sizeof(pkt.msg) - 1; i++ )
 			pkt.msg[i] = i + '0';
 		pkt.msg[i] = 0;
 		pkt.hdr.un.echo.sequence = seq;// sequence
@@ -86,7 +89,7 @@ int ping(char *host)
 			if (c < 0)
 				perror("ping: sendto");
 			fprintf(stderr, "ping: write incomplete\n");
-	    	return -1;
+	    	return ;
 		}
 
 		memset(&from, 0, sizeof(from));
@@ -102,12 +105,20 @@ int ping(char *host)
 			char daddr[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &(iphdr->saddr), saddr, INET_ADDRSTRLEN);
 			inet_ntop(AF_INET, &(iphdr->daddr), daddr, INET_ADDRSTRLEN);
-			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=0.000 ms\n", c, saddr, seq, iphdr->ttl);
+			//56 bytes from 216.58.208.238: icmp_seq=0 ttl=61 time=9.695 ms
+			printf("%d bytes from %s: icmp_seq=%d, ttl=%d time=0000 ms\n", c, saddr, seq, iphdr->ttl);
+			//printf("TTL:%d size:%d, seq=%d from:%s to destination:%s\n", iphdr->ttl, c, seq, saddr, daddr);
 		}
 		seq++;
 		sleep(1);
 	}
 	printf("%s is alive!\n", hostname);
-	return 0;
+	return;
 }
 
+int main (int ac, char**av)
+{
+	hostname = av[1];
+	ping(av[1]);
+	return 0;
+}
