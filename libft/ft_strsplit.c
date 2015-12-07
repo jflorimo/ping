@@ -6,7 +6,7 @@
 /*   By: jflorimo <jflorimo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2013/12/07 17:44:44 by jflorimo          #+#    #+#             */
-/*   Updated: 2013/12/07 17:54:53 by jflorimo         ###   ########.fr       */
+/*   Updated: 2015/12/02 10:13:26 by jflorimo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,6 +59,6 @@ char			**ft_strsplit(char const *s, char c)
 			tab[size++] = ft_strsub(s, start, i - start);
 		}
 	}
-	tab[size] = '\0';
+	tab[size] = 0;
 	return (tab);
 }

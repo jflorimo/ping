@@ -20,7 +20,6 @@ typedef struct			s_data
 	char 				*response;
 }						t_data;
 
-int ft_ping(char *adress);
-t_data *initConnexion(char *adress);
+int ping(char *adress);
 
 #endif

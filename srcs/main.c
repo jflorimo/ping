@@ -15,7 +15,7 @@ int main(int ac, char **av)
 		helpOption();
 	else
 	{
-		ft_ping(av[1]);
+		ping(av[1]);
 	}
 	return 0;
 }
