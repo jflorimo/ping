@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #define PACKETSIZE	56
 struct packet
@@ -20,6 +21,7 @@ struct packet
 };
 
 static char *hostname = NULL;
+static int count = 0;
 
 static unsigned short calcsum(unsigned short *buffer, int length)
 {
@@ -32,15 +34,28 @@ static unsigned short calcsum(unsigned short *buffer, int length)
 	sum += (sum >> 16);
 	return ~sum;
 }
+static void displayStatistic()
+{
+	printf("--- %s ping statistics number:%d ---\n", hostname, count);
+	
+}
+
+static void intHandler(int dummy) {
+	(void)dummy;
+    displayStatistic();
+    exit(1);
+}
 
 int ping(char *host)
 {
+	struct timeval stop, start;
 	struct addrinfo *addrinfo;
 	struct sockaddr_in addr;
 	struct sockaddr_in from;
 	struct packet pkt;
 	int pingsock, c;
-
+	hostname = host;
+	signal(SIGINT, intHandler);
 	if ((pingsock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
 	{
 		perror("ping: creating a raw socket");
@@ -68,9 +83,9 @@ int ping(char *host)
 	//PING google.com (216.58.208.238): 48 data bytes
 	printf("PING %s (%s): %d data bytes\n", host, adress, (int)(PACKETSIZE-sizeof(struct icmphdr)));
 	int seq = 0;
-	while (0x2a)
+	while (0x2A)
 	{
-
+		gettimeofday(&start, NULL);
 		memset(&pkt, 0, sizeof(pkt));
 		pkt.hdr.type = ICMP_ECHO;
 		pkt.hdr.un.echo.id = getpid();
@@ -82,6 +97,7 @@ int ping(char *host)
 		pkt.hdr.checksum = calcsum((short unsigned int *)&pkt, sizeof(pkt));
 
 		c = sendto(pingsock, &pkt, sizeof(pkt), 0, (struct sockaddr *)&addr, sizeof(addr));
+		count++;
 		if (c < 0 || c != sizeof(pkt)) {
 			if (c < 0)
 				perror("ping: sendto");
@@ -102,12 +118,13 @@ int ping(char *host)
 			char daddr[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &(iphdr->saddr), saddr, INET_ADDRSTRLEN);
 			inet_ntop(AF_INET, &(iphdr->daddr), daddr, INET_ADDRSTRLEN);
-			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=0.000 ms\n", c, saddr, seq, iphdr->ttl);
+			gettimeofday(&stop, NULL);
+			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%lu ms\n", c, saddr, seq, iphdr->ttl, stop.tv_usec - start.tv_usec);
 		}
 		seq++;
 		sleep(1);
 	}
-	printf("%s is alive!\n", hostname);
+	
 	return 0;
 }
 
