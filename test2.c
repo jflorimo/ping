@@ -9,10 +9,6 @@
 #include <sys/signal.h>
 #include <string.h>
 
-#define DEFDATALEN      56
-#define MAXIPLEN        60
-#define MAXICMPLEN      76
-
 #define PACKETSIZE	56
 struct packet
 {
@@ -74,7 +70,7 @@ static void ping(char *host)
 	addr.sin_port = 0;
 	addr.sin_addr.s_addr = ((struct sockaddr_in*)(addrinfo->ai_addr))->sin_addr.s_addr;
 
-	int seq = 1;
+	int seq = 0;
 	while (0x2a)
 	{
 
@@ -109,9 +105,12 @@ static void ping(char *host)
 			char daddr[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &(iphdr->saddr), saddr, INET_ADDRSTRLEN);
 			inet_ntop(AF_INET, &(iphdr->daddr), daddr, INET_ADDRSTRLEN);
-			printf("TTL:%d from:%s to destination:%s\n", iphdr->ttl, saddr, daddr);
+			//56 bytes from 216.58.208.238: icmp_seq=0 ttl=61 time=9.695 ms
+			printf("%d bytes from %s: icmp_seq=%d, ttl=%d time=0000 ms\n", c, saddr, seq, iphdr->ttl);
+			//printf("TTL:%d size:%d, seq=%d from:%s to destination:%s\n", iphdr->ttl, c, seq, saddr, daddr);
 		}
 		seq++;
+		sleep(1);
 	}
 	printf("%s is alive!\n", hostname);
 	return;
