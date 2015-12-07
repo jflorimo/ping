@@ -119,7 +119,7 @@ int ping(char *host)
 			inet_ntop(AF_INET, &(iphdr->saddr), saddr, INET_ADDRSTRLEN);
 			inet_ntop(AF_INET, &(iphdr->daddr), daddr, INET_ADDRSTRLEN);
 			gettimeofday(&stop, NULL);
-			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%lu ms\n", c, saddr, seq, iphdr->ttl, stop.tv_usec - start.tv_usec);
+			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n", c, saddr, seq, iphdr->ttl, (float)((float)stop.tv_usec - (float)start.tv_usec)/1000);
 		}
 		seq++;
 		sleep(1);
