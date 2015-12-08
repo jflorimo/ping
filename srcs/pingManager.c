@@ -13,15 +13,27 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+
 #define PACKETSIZE	56
+
 struct packet
 {
 	struct icmphdr hdr;
 	char msg[PACKETSIZE-sizeof(struct icmphdr)];
 };
 
+struct Bigdata
+{
+	float min;
+	float max;
+	float average;
+	int number;
+};
+
 static char *hostname = NULL;
 static int count = 0;
+static int received = 0;
+static struct Bigdata data = {0, 0, 0, 0};
 
 static unsigned short calcsum(unsigned short *buffer, int length)
 {
@@ -36,7 +48,12 @@ static unsigned short calcsum(unsigned short *buffer, int length)
 }
 static void displayStatistic()
 {
-	printf("--- %s ping statistics number:%d ---\n", hostname, count);
+	printf("--- %s ping statistics ---\n", hostname);
+	//3 packets transmitted, 3 packets received, 0% packet loss
+	//round-trip min/avg/max/stddev = 1.800/1.871/1.909/0.050 ms
+	printf("%d packets transmitted, %d packets received, %d%% packet loss\n", count, received, 100-((received*100)/count));
+	printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n", data.min, data.average/(float)data.number, data.max, 1.1);
+
 	
 }
 
@@ -55,6 +72,7 @@ int ping(char *host)
 	struct packet pkt;
 	int pingsock, c;
 	hostname = host;
+
 	signal(SIGINT, intHandler);
 	if ((pingsock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
 	{
@@ -70,7 +88,7 @@ int ping(char *host)
 	// }
 	if (getaddrinfo(host, NULL, NULL, &addrinfo) != 0)
 	{
-		printf("we got an error getting adress info!\n");
+		printf("ping: unknown host\n");
 		return -1;
 	}
 
@@ -113,13 +131,29 @@ int ping(char *host)
 		}
 		if (c >= PACKETSIZE)
 		{
+			received++;
 			struct iphdr *iphdr = (struct iphdr *)&pkt;
 			char saddr[INET_ADDRSTRLEN];
 			char daddr[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &(iphdr->saddr), saddr, INET_ADDRSTRLEN);
 			inet_ntop(AF_INET, &(iphdr->daddr), daddr, INET_ADDRSTRLEN);
 			gettimeofday(&stop, NULL);
-			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n", c, saddr, seq, iphdr->ttl, (float)((float)stop.tv_usec - (float)start.tv_usec)/1000);
+			float timeElapsed = (float)((float)stop.tv_usec - (float)start.tv_usec)/1000;
+			data.number++;
+			if (data.number == 1)
+			{
+					data.min = timeElapsed;
+					data.max = timeElapsed;
+			}
+			else
+			{
+				if (timeElapsed < data.min)
+					data.min = timeElapsed;
+				if (timeElapsed > data.max)
+					data.max = timeElapsed;
+				data.average += timeElapsed;
+			}
+			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n", c, saddr, seq, iphdr->ttl, timeElapsed);
 		}
 		seq++;
 		sleep(1);
