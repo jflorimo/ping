@@ -49,12 +49,8 @@ static unsigned short calcsum(unsigned short *buffer, int length)
 static void displayStatistic()
 {
 	printf("--- %s ping statistics ---\n", hostname);
-	//3 packets transmitted, 3 packets received, 0% packet loss
-	//round-trip min/avg/max/stddev = 1.800/1.871/1.909/0.050 ms
 	printf("%d packets transmitted, %d packets received, %d%% packet loss\n", count, received, 100-((received*100)/count));
 	printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n", data.min, data.average/(float)data.number, data.max, 1.1);
-
-	
 }
 
 static void intHandler(int dummy) {
