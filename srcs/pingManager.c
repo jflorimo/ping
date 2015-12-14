@@ -1,4 +1,5 @@
 #include "pingManager.h"
+#include <libft.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
@@ -22,18 +23,21 @@ struct packet
 	char msg[PACKETSIZE-sizeof(struct icmphdr)];
 };
 
+
 struct Bigdata
 {
 	float min;
 	float max;
 	float average;
+	float stddev;
 	int number;
 };
 
 static char *hostname = NULL;
 static int count = 0;
 static int received = 0;
-static struct Bigdata data = {0, 0, 0, 0};
+static struct Bigdata data = {0, 0, 0, 0, 0};
+static t_list *elements = NULL;
 
 static unsigned short calcsum(unsigned short *buffer, int length)
 {
@@ -50,7 +54,15 @@ static void displayStatistic()
 {
 	printf("--- %s ping statistics ---\n", hostname);
 	printf("%d packets transmitted, %d packets received, %d%% packet loss\n", count, received, 100-((received*100)/count));
-	printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n", data.min, data.average/(float)data.number, data.max, 1.1);
+
+	// float stddev = 0;
+	float average = data.average/(float)data.number;
+	// while (elements->next != NULL)
+	// {
+	// 	stddev += ((float)(elements->content) * (float)(elements->content))
+	// }
+
+	printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n", data.min, average, data.max, 1.1);
 }
 
 static void intHandler(int dummy) {
@@ -68,7 +80,6 @@ int ping(char *host)
 	struct packet pkt;
 	int pingsock, c;
 	hostname = host;
-
 	signal(SIGINT, intHandler);
 	if ((pingsock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0)
 	{
@@ -149,6 +160,10 @@ int ping(char *host)
 					data.max = timeElapsed;
 				data.average += timeElapsed;
 			}
+			if (elements == NULL)
+				elements = ft_lstnew((void *)&timeElapsed, sizeof(float));
+			else
+				ft_lstadd(&elements, ft_lstnew((void *)&timeElapsed, sizeof(float)));
 			printf("%d bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n", c, saddr, seq, iphdr->ttl, timeElapsed);
 		}
 		seq++;
