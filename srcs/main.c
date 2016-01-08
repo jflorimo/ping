@@ -15,6 +15,7 @@ int main(int ac, char **av)
 		helpOption();
 	else
 	{
+		//TODO parse options -v and -h and do stddev
 		ping(av[1]);
 	}
 	return 0;
