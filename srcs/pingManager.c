@@ -55,14 +55,21 @@ static void displayStatistic()
 	printf("--- %s ping statistics ---\n", hostname);
 	printf("%d packets transmitted, %d packets received, %d%% packet loss\n", count, received, 100-((received*100)/count));
 
-	// float stddev = 0;
+	float stddev = 0;
 	float average = data.average/(float)data.number;
-	// while (elements->next != NULL)
-	// {
-	// 	stddev += ((float)(elements->content) * (float)(elements->content))
-	// }
-
-	printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n", data.min, average, data.max, 1.1);
+	while (elements->next != NULL)
+	{
+		float value = *(float *)(elements->content);
+		float tmp = (value - average)*(value - average);
+		if (tmp < 0)
+			tmp *= -1;
+		stddev += tmp;
+		elements = elements->next;
+	}
+	stddev /= (float)data.number;
+	if (data.number == 1)
+		average = data.min;
+	printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n", data.min, average, data.max, stddev/2);
 }
 
 static void intHandler(int dummy) {
